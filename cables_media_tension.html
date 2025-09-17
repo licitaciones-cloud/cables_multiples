@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Especificaciones de Cables de Media Tensión - Colombia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Industrial Neutrals -->
+    <!-- Application Structure Plan: Se ha diseñado una arquitectura basada en componentes técnicos del cable (Conductor, Aislamiento, etc.) en lugar de por empresa. Esta estructura permite a un fabricante como CMSA comparar directamente los requisitos de diferentes electrificadoras para una misma parte del cable, facilitando la identificación de especificaciones comunes y divergentes. La navegación principal permite saltar entre estas secciones temáticas. Un filtro interactivo por empresa resalta los requisitos específicos dentro de las tablas comparativas, ofreciendo una vista detallada bajo demanda. Este enfoque de "comparación por característica" es más eficiente para la producción y certificación que una estructura aislada por empresa. -->
+    <!-- Visualization & Content Choices: La información se presenta principalmente en tablas HTML interactivas, ya que el usuario solicitó explícitamente este formato para datos técnicos detallados. Report Info: Requisitos de material, calibre, espesor. -> Goal: Comparar especificaciones entre EPM y ENEL. -> Viz/Presentation Method: Tabla HTML con filas y columnas claras. -> Interaction: Botones de filtro que aplican una clase CSS para resaltar visualmente las filas/celdas correspondientes a una empresa seleccionada, permitiendo un enfoque rápido en un conjunto de normas. -> Justification: Las tablas son el método más claro y denso para presentar datos normativos complejos. El filtro interactivo resuelve el problema de la comparación directa. -> Library/Method: Vanilla JS y Tailwind CSS. No se usan gráficos ya que los datos son cualitativos y normativos, no cuantitativos. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8fafc;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+        }
+        .filter-btn {
+            transition: all 0.3s ease;
+        }
+        .filter-btn.active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .highlight {
+            background-color: #eff6ff !important;
+            border-left: 4px solid #3b82f6;
+        }
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+        }
+        th, td {
+            white-space: normal;
+            word-wrap: break-word;
+        }
+        @media (min-width: 768px) {
+            th, td {
+                white-space: initial;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-blue-600">CMSA</span>
+                    <span class="ml-2 text-lg font-light text-gray-600">Dashboard Técnico</span>
+                </div>
+                <nav id="main-nav" class="hidden md:flex space-x-6">
+                    <a href="#general" class="nav-link active font-medium text-gray-600" onclick="switchTab('general', this)">Generalidades</a>
+                    <a href="#conductor" class="nav-link font-medium text-gray-600" onclick="switchTab('conductor', this)">Conductor</a>
+                    <a href="#aislamiento" class="nav-link font-medium text-gray-600" onclick="switchTab('aislamiento', this)">Aislamiento</a>
+                    <a href="#pantallas" class="nav-link font-medium text-gray-600" onclick="switchTab('pantallas', this)">Pantallas</a>
+                    <a href="#chaqueta" class="nav-link font-medium text-gray-600" onclick="switchTab('chaqueta', this)">Chaqueta</a>
+                    <a href="#normas" class="nav-link font-medium text-gray-600" onclick="switchTab('normas', this)">Normas</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Análisis de Especificaciones para Cables de Media Tensión</h1>
+            <p class="text-gray-600">Este dashboard consolida y compara los requisitos técnicos exigidos por las principales electrificadoras de Colombia, <strong>EPM (y filiales)</strong> y <strong>ENEL</strong>, para la fabricación y certificación de cables de media tensión. Utilice los filtros para resaltar las especificaciones de cada empresa.</p>
+            <div id="filter-container" class="mt-4 flex flex-wrap gap-3">
+                <button class="filter-btn active bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg" data-company="all" onclick="filterByCompany('all')">Mostrar Todos</button>
+                <button class="filter-btn bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg" data-company="epm" onclick="filterByCompany('epm')">EPM y Filiales</button>
+                <button class="filter-btn bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg" data-company="enel" onclick="filterByCompany('enel')">ENEL (Codensa)</button>
+            </div>
+        </div>
+        
+        <div id="content-area">
+        </div>
+    </main>
+
+    <footer class="bg-white mt-8 py-4 border-t">
+        <div class="container mx-auto px-4 text-center text-gray-500">
+            <p>&copy; 2025 CMSA - Herramienta de Análisis Normativo. Información para uso interno.</p>
+        </div>
+    </footer>
+
+    <script>
+        const technicalData = {
+            general: {
+                title: "Generalidades y Alcance",
+                description: "Esta sección describe el propósito general, los niveles de tensión y los tipos de cables cubiertos por las normativas de EPM y ENEL. Comprender estos conceptos básicos es el primer paso para alinear la producción con los requisitos del mercado.",
+                table: {
+                    headers: ["Característica", "Requisito EPM y Filiales (ESSA, etc.)", "Requisito ENEL (Codensa)"],
+                    rows: [
+                        { "Característica": "Tipo de Cable", "Requisito EPM y Filiales (ESSA, etc.)": "Cable de potencia monopolar para distribución subterránea de media tensión.", "Requisito ENEL (Codensa)": "Cables unipolar y tripolar para redes de distribución subterránea de media tensión." },
+                        { "Característica": "Niveles de Tensión Nominal", "Requisito EPM y Filiales (ESSA, etc.)": "15 kV, 34.5 kV. Principalmente se enfoca en 13.2 kV y 34.5 kV.", "Requisito ENEL (Codensa)": "15 kV, 17.5 kV, 24 kV, 36 kV. Principalmente 11.4 kV y 34.5 kV." },
+                        { "Característica": "Nivel de Aislamiento", "Requisito EPM y Filiales (ESSA, etc.)": "100% y 133%. El nivel 133% se usa en sistemas donde la falla a tierra no es despejada en menos de 1 minuto.", "Requisito ENEL (Codensa)": "100% y 133%. El nivel 133% se aplica en sistemas sin neutro puesto a tierra o con impedancia." },
+                        { "Característica": "Temperatura de Operación", "Requisito EPM y Filiales (ESSA, etc.)": "90°C en operación continua. 130°C en emergencia (100 horas/año, 500h total). 250°C en cortocircuito (5s max).", "Requisito ENEL (Codensa)": "90°C en operación continua. 130°C en emergencia. 250°C en cortocircuito." }
+                    ]
+                }
+            },
+            conductor: {
+                title: "Especificaciones del Conductor",
+                description: "El conductor es el componente central del cable. Las electrificadoras definen estrictamente el material, la construcción y los calibres permitidos para garantizar la capacidad de corriente y la fiabilidad mecánica. La preferencia por el aluminio es una tendencia clara por su relación costo-beneficio.",
+                table: {
+                    headers: ["Característica", "Requisito EPM y Filiales (ESSA, etc.)", "Requisito ENEL (Codensa)"],
+                    rows: [
+                        { "Característica": "Material Principal", "Requisito EPM y Filiales (ESSA, etc.)": "Aluminio 1350, temple H12 o H22.", "Requisito ENEL (Codensa)": "Aluminio 1350-H14 o H16. Se acepta cobre como alternativa en casos específicos." },
+                        { "Característica": "Construcción", "Requisito EPM y Filiales (ESSA, etc.)": "Cableado concéntrico comprimido o compactado, clase B.", "Requisito ENEL (Codensa)": "Cableado concéntrico redondo compactado, clase B." },
+                        { "Característica": "Bloqueo de Humedad", "Requisito EPM y Filiales (ESSA, etc.)": "Conductor bloqueado contra la penetración longitudinal de agua mediante materiales obturadores.", "Requisito ENEL (Codensa)": "El conductor debe tener un compuesto bloqueador de agua para prevenir la migración longitudinal." },
+                        { "Característica": "Calibres Comunes (Aluminio)", "Requisito EPM y Filiales (ESSA, etc.)": "1/0 AWG, 4/0 AWG, 350 kcmil, 500 kcmil.", "Requisito ENEL (Codensa)": "70 mm², 120 mm², 185 mm², 240 mm²." },
+                        { "Característica": "Calibres Comunes (Cobre)", "Requisito EPM y Filiales (ESSA, etc.)": "Alternativa en calibres como 1/0 AWG, 4/0 AWG.", "Requisito ENEL (Codensa)": "150 mm² (equivalente a 240 mm² Al) cuando la infraestructura existente lo requiera." }
+                    ]
+                }
+            },
+            aislamiento: {
+                title: "Especificaciones de Aislamiento",
+                description: "El aislamiento es crítico para la seguridad y la vida útil del cable. Se especifica el uso de polietileno reticulado (XLPE) por sus excelentes propiedades dieléctricas y térmicas. El tipo de XLPE y su espesor varían según el nivel de tensión y la política de cada empresa para mitigar riesgos.",
+                table: {
+                    headers: ["Característica", "Requisito EPM y Filiales (ESSA, etc.)", "Requisito ENEL (Codensa)"],
+                    rows: [
+                        { "Característica": "Material", "Requisito EPM y Filiales (ESSA, etc.)": "Polietileno reticulado (XLPE) resistente a las arborescencias (TR-XLPE).", "Requisito ENEL (Codensa)": "Polietileno reticulado (XLPE). El TR-XLPE es preferido y puede ser exigido." },
+                        { "Característica": "Proceso de Extrusión", "Requisito EPM y Filiales (ESSA, etc.)": "Proceso de triple extrusión en seco (semiconductor-aislamiento-semiconductor) para garantizar una interfaz perfecta y libre de vacíos.", "Requisito ENEL (Codensa)": "Triple extrusión simultánea y curado en seco, para las tres capas (pantalla conductora, aislamiento, pantalla aislamiento)." },
+                        { "Característica": "Espesor Mínimo (15 kV, 100%)", "Requisito EPM y Filiales (ESSA, etc.)": "4.4 mm (175 mils)", "Requisito ENEL (Codensa)": "4.4 mm (175 mils)" },
+                        { "Característica": "Espesor Mínimo (15 kV, 133%)", "Requisito EPM y Filiales (ESSA, etc.)": "5.6 mm (220 mils)", "Requisito ENEL (Codensa)": "5.6 mm (220 mils)" },
+                        { "Característica": "Espesor Mínimo (35 kV, 100%)", "Requisito EPM y Filiales (ESSA, etc.)": "8.7 mm (345 mils)", "Requisito ENEL (Codensa)": "8.7 mm (345 mils)" }
+                    ]
+                }
+            },
+            pantallas: {
+                title: "Pantallas Semiconductoras y Metálica",
+                description: "Las pantallas controlan el campo eléctrico y proporcionan una ruta para la corriente de falla. La pantalla del conductor y del aislamiento deben ser de alta calidad, mientras que la pantalla metálica debe tener la capacidad de conducir la corriente de falla a tierra de forma segura.",
+                table: {
+                    headers: ["Característica", "Requisito EPM y Filiales (ESSA, etc.)", "Requisito ENEL (Codensa)"],
+                    rows: [
+                        { "Característica": "Pantalla sobre Conductor", "Requisito EPM y Filiales (ESSA, etc.)": "Compuesto semiconductor termoestable, compatible con el conductor y el aislamiento.", "Requisito ENEL (Codensa)": "Compuesto polimérico semiconductor termoestable, extruido sobre el conductor." },
+                        { "Característica": "Pantalla sobre Aislamiento", "Requisito EPM y Filiales (ESSA, etc.)": "Compuesto semiconductor termoestable, fácilmente removible en frío y compatible con el aislamiento.", "Requisito ENEL (Codensa)": "Compuesto polimérico semiconductor termoestable, extruido sobre el aislamiento." },
+                        { "Característica": "Pantalla Metálica (Material)", "Requisito EPM y Filiales (ESSA, etc.)": "Hilos de cobre recocido aplicados helicoidalmente.", "Requisito ENEL (Codensa)": "Alambres de cobre suave aplicados helicoidalmente." },
+                        { "Característica": "Pantalla Metálica (Capacidad)", "Requisito EPM y Filiales (ESSA, etc.)": "Sección transversal equivalente a 1/3 del área del conductor de fase para ciertos calibres. Dimensionada para la corriente de cortocircuito del sistema.", "Requisito ENEL (Codensa)": "El diseño debe ser específico para la corriente de falla del sistema. Se usan diseños de capacidad nominal completa o reducida según la aplicación." }
+                    ]
+                }
+            },
+            chaqueta: {
+                title: "Chaqueta Exterior y Marcación",
+                description: "La chaqueta protege el cable de daños mecánicos, químicos y ambientales. Sus características y la información impresa en ella son fundamentales para la identificación, trazabilidad y seguridad durante la instalación y operación.",
+                table: {
+                    headers: ["Característica", "Requisito EPM y Filiales (ESSA, etc.)", "Requisito ENEL (Codensa)"],
+                    rows: [
+                        { "Característica": "Material", "Requisito EPM y Filiales (ESSA, etc.)": "Polietileno lineal de baja densidad (LLDPE).", "Requisito ENEL (Codensa)": "Polietileno (PE) o Policloruro de vinilo (PVC) retardante a la llama, resistente a la luz solar." },
+                        { "Característica": "Color", "Requisito EPM y Filiales (ESSA, etc.)": "Negro.", "Requisito ENEL (Codensa)": "Negro." },
+                        { "Característica": "Espesor Mínimo", "Requisito EPM y Filiales (ESSA, etc.)": "Aprox. 2.03 mm (80 mils) para diámetros hasta 50mm.", "Requisito ENEL (Codensa)": "Regido por la norma ICEA S-94-649, depende del diámetro del cable." },
+                        { "Característica": "Marcación (Contenido)", "Requisito EPM y Filiales (ESSA, etc.)": "Nombre del fabricante, EPM, año, material y calibre del conductor, nivel de tensión, 'TR-XLPE', marcación secuencial de longitud en metros.", "Requisito ENEL (Codensa)": "Nombre del fabricante, ENEL-CODENSA, año de fabricación, tensión nominal, calibre y material del conductor, tipo de aislamiento, marcación secuencial de longitud." },
+                        { "Característica": "Método de Marcación", "Requisito EPM y Filiales (ESSA, etc.)": "Marcación superficial en bajo relieve (indentada), legible y duradera.", "Requisito ENEL (Codensa)": "Impresión en tinta o bajo relieve, de forma indeleble." }
+                    ]
+                }
+            },
+            normas: {
+                title: "Normas Técnicas y Certificaciones",
+                description: "Esta sección es vital para el proceso de certificación. Enumera las normas nacionales e internacionales que los cables deben cumplir. La adhesión a estas normas garantiza la interoperabilidad, seguridad y calidad del producto, siendo un requisito indispensable para ser proveedor.",
+                table: {
+                    headers: ["Norma", "Descripción", "Aplicabilidad EPM", "Aplicabilidad ENEL"],
+                    rows: [
+                        { "Norma": "NTC 2186", "Descripción": "Cables de potencia con aislamiento extruido y sus accesorios para tensiones nominales de 1 kV a 35 kV.", "Aplicabilidad EPM": "Sí", "Aplicabilidad ENEL": "Sí" },
+                        { "Norma": "ANSI/ICEA S-94-649", "Descripción": "Norma para cables de potencia de 5 a 46 kV con aislamiento dieléctrico extruido.", "Aplicabilidad EPM": "Sí", "Aplicabilidad ENEL": "Sí" },
+                        { "Norma": "ANSI/ICEA S-97-682", "Descripción": "Norma para cables de utilidad con aislamiento extruido para 5 a 46 kV.", "Aplicabilidad EPM": "Sí", "Aplicabilidad ENEL": "No explícito, pero cubierto por S-94-649" },
+                        { "Norma": "ASTM (Varias)", "Descripción": "Especificaciones para materiales: B3 (Cobre), B8 (Conductores trenzados), B230/B231 (Aluminio).", "Aplicabilidad EPM": "Sí", "Aplicabilidad ENEL": "Sí" },
+                        { "Norma": "IEC 60502-2", "Descripción": "Norma internacional para cables de potencia con aislamiento extruido para tensiones de 6 kV a 30 kV.", "Aplicabilidad EPM": "Referencia", "Aplicabilidad ENEL": "Referencia" },
+                        { "Norma": "RETIE", "Descripción": "Reglamento Técnico de Instalaciones Eléctricas de Colombia.", "Aplicabilidad EPM": "Obligatorio", "Aplicabilidad ENEL": "Obligatorio" }
+                    ]
+                }
+            }
+        };
+
+        const contentArea = document.getElementById('content-area');
+        let currentFilter = 'all';
+
+        function renderContent(tabName) {
+            const data = technicalData[tabName];
+            if (!data) return;
+
+            let tableHtml = `
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-3">${data.title}</h2>
+                    <p class="text-gray-600 mb-6">${data.description}</p>
+                    <div class="table-responsive">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>`;
+            data.table.headers.forEach(header => {
+                tableHtml += `<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${header}</th>`;
+            });
+            tableHtml += `        </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">`;
+
+            data.table.rows.forEach(row => {
+                let epmClass = currentFilter === 'epm' || currentFilter === 'all' ? '' : 'opacity-40';
+                let enelClass = currentFilter === 'enel' || currentFilter === 'all' ? '' : 'opacity-40';
+                
+                let rowClasses = '';
+                if(currentFilter === 'epm' || currentFilter === 'enel') {
+                    rowClasses = 'transition-opacity duration-300';
+                }
+
+                tableHtml += `<tr class="${rowClasses}">`;
+                
+                data.table.headers.forEach((header, index) => {
+                    let cellData = row[header] || '-';
+                    let highlightClass = '';
+                    if (currentFilter === 'epm' && header.toLowerCase().includes('epm')) {
+                        highlightClass = 'highlight';
+                    }
+                    if (currentFilter === 'enel' && header.toLowerCase().includes('enel')) {
+                        highlightClass = 'highlight';
+                    }
+                    
+                    tableHtml += `<td class="px-6 py-4 text-sm text-gray-700 ${highlightClass}">${cellData}</td>`;
+                });
+                tableHtml += `</tr>`;
+            });
+
+            tableHtml += `      </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            
+            contentArea.innerHTML = tableHtml;
+        }
+
+        function switchTab(tabName, element) {
+            document.querySelectorAll('#main-nav .nav-link').forEach(link => link.classList.remove('active'));
+            element.classList.add('active');
+            renderContent(tabName);
+        }
+
+        function filterByCompany(company) {
+            currentFilter = company;
+            document.querySelectorAll('#filter-container .filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-blue-600', 'bg-sky-600', 'bg-gray-800', 'text-white');
+                if (btn.dataset.company === company) {
+                    btn.classList.add('active');
+                    if (company === 'all') {
+                        btn.classList.add('bg-gray-200', 'text-gray-800');
+                    } else if (company === 'epm') {
+                        btn.classList.add('bg-blue-500', 'text-white');
+                    } else {
+                        btn.classList.add('bg-sky-500', 'text-white');
+                    }
+                } else {
+                     if (btn.dataset.company === 'all') {
+                        btn.classList.add('bg-gray-200', 'text-gray-800');
+                    } else if (btn.dataset.company === 'epm') {
+                        btn.classList.add('bg-blue-500', 'text-white');
+                    } else {
+                        btn.classList.add('bg-sky-500', 'text-white');
+                    }
+                }
+            });
+            const activeTab = document.querySelector('#main-nav .nav-link.active');
+            const tabName = activeTab.getAttribute('href').substring(1);
+            renderContent(tabName);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderContent('general');
+        });
+
+    </script>
+</body>
+</html>
