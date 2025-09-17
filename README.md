@@ -22,7 +22,15 @@ El sitio se despliega automáticamente usando GitHub Actions cuando se hacen cam
 2. **Workflow**: `.github/workflows/deploy.yml` - se ejecuta automáticamente en cada push a main
 3. **Dominio**: El sitio está disponible en `https://licitaciones-cloud.github.io/cables_multiples/`
 
-### Pasos para Actualizar el Sitio
+### Pasos para Activar el Sitio Web (Primera vez)
+
+1. **Mergear esta PR a la rama `main`** - Esto activará el workflow de GitHub Actions
+2. **Configurar GitHub Pages** en la configuración del repositorio:
+   - Ir a Settings > Pages
+   - Seleccionar "GitHub Actions" como fuente de deployment
+3. El sitio se desplegará automáticamente en `https://licitaciones-cloud.github.io/cables_multiples/`
+
+### Pasos para Actualizar el Sitio (Futuras actualizaciones)
 
 1. Hacer cambios en los archivos del sitio web
 2. Hacer commit y push a la rama `main`
